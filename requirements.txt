@@ -1,0 +1,30 @@
+# hikari
+hikari @ git+https://github.com/hikari-py/hikari#egg=hikari[speedups]
+
+alluka @ git+https://github.com/FasterSpeeding/Alluka
+hikari-tanjun @ git+https://github.com/FasterSpeeding/Tanjun
+hikari-yuyo @ git+https://github.com/FasterSpeeding/Yuyo
+
+hikari-tanchi @ git+https://github.com/thesadru/tanchi
+
+# meta
+typing_extensions
+PyYAML
+psutil
+python-dotenv
+black
+mypy
+
+# db
+odmantic
+
+# utils
+thefuzz[speedup]
+attrs
+pydantic
+
+# components
+pysaucenao
+
+# debugging
+devtools

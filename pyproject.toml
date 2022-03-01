@@ -1,0 +1,15 @@
+
+[tool.black]
+line-length     = 120
+target-version  = ["py39"]
+
+[tool.isort]
+profile = "black"
+
+
+[tool.pyright]
+typeCheckingMode = "basic"
+strictParameterNoneValue = false
+
+[tool.mypy]
+
