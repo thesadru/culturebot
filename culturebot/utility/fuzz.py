@@ -1,5 +1,3 @@
-import collections.abc
-import collections
 import sys
 import typing
 
@@ -12,10 +10,10 @@ __all__ = ["extract", "extract_mapping"]
 T = typing.TypeVar("T")
 
 
-class ReversedMapping(dict):
+class ReversedMapping(dict[str, typing.Any]):
     """Mapping for thefuzz because it wants values as keys"""
 
-    def items(self):
+    def items(self) -> typing.Any:
         return [(value, key) for key, value in super().items()]
 
 
@@ -32,14 +30,17 @@ def extract_with_scores(
 
     Returns a list of (score, matched choice, choice value)
     """
+    if 0 < cutoff < 1:
+        cutoff *= 100
+
     if isinstance(choices, typing.Mapping):
         choices = ReversedMapping(choices)
 
-    extracted = thefuzz.process.extractBests(
+    extracted: typing.Sequence[typing.Any] = thefuzz.process.extractBests(
         query,
         choices,
         limit=limit or sys.maxsize,
-        score_cutoff=int(cutoff * 100),
+        score_cutoff=round(cutoff),
         scorer=typing.cast("typing.Callable[..., int]", scorer),
         processor=typing.cast("typing.Callable[..., str]", processor),
     )

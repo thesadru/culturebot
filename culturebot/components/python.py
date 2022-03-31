@@ -3,13 +3,12 @@ import re
 import shlex
 import typing
 
-import black.mode
 import black
-import devtools
-import mypy.api
-import isort.api
-import tanchi
+import black.mode
 import hikari
+import isort.api
+import mypy.api
+import tanchi
 import tanjun
 
 blib_logger = logging.getLogger("blib2to3")
@@ -38,12 +37,12 @@ def format_code_blocks(content: str, line_length: int = 88, sort_imports: bool =
     )
 
 
-def mypy_type_check(content: str, args: typing.List[str]) -> str:
-    stdout, stderr, code = mypy.api.run(args + ["-c", content])
+def mypy_type_check(content: str, args: typing.Sequence[str]) -> str:
+    stdout, stderr, code = mypy.api.run([*args, "-c", content])
     return stdout
 
 
-def mypy_type_check_code_blocks(content: str, args: typing.List[str] = None) -> str:
+def mypy_type_check_code_blocks(content: str, args: typing.Optional[typing.Sequence[str]] = None) -> str:
     args = args or []
 
     result: typing.List[str] = []
@@ -93,18 +92,12 @@ async def type_check(
 ):
     """Type-check all python code blocks in a message.
 
-    Parameters
-    ----------
-    message : str
-        A link to a message to type-check.
-    ephemeral : bool
-        Whether the response should be ephemeral.
-    strict : bool
-        Whether to use the --strict flag.
-    arguments : str
-        Command line arguments to use with mypy.
+    Args:
+        message: A link to a message to type-check.
+        ephemeral: Whether the response should be ephemeral.
+        strict: Whether to use the --strict flag.
+        arguments: Command line arguments to use with mypy.
     """
-
     assert message.content
 
     args = shlex.split(arguments)

@@ -2,6 +2,7 @@ import dataclasses
 import typing
 
 import aiohttp
+import aiohttp.typedefs
 import yarl
 
 __all__ = ["DeepL", "DeepLException"]
@@ -40,8 +41,9 @@ class Language:
 
 class DeepL:
     _session: typing.Optional[aiohttp.ClientSession] = None
+    _languages: typing.ClassVar[typing.Tuple[list[Language], list[Language]]] = ([], [])
 
-    def __init__(self, token: str, version: int = 2, session: aiohttp.ClientSession = None) -> None:
+    def __init__(self, token: str, version: int = 2, session: typing.Optional[aiohttp.ClientSession] = None) -> None:
         self.token = token
         self.version = version
         self._session = session
@@ -60,18 +62,19 @@ class DeepL:
     def session(self) -> aiohttp.ClientSession:
         if self._session is None:
             self._session = aiohttp.ClientSession()
+
         return self._session
 
     async def close(self) -> None:
         await self.session.close()
 
-    def raise_for_status(self, status_code: int, json: typing.Dict[str, typing.Any]):
+    def raise_for_status(self, status_code: int, data: typing.Dict[str, typing.Any]):
         message = ""
-        if json is not None:
-            if "message" in json:
-                message += ", message: " + json["message"]
-            if "detail" in json:
-                message += ", detail: " + json["detail"]
+        if data is not None:
+            if "message" in data:
+                message += ", message: " + data["message"]
+            if "detail" in data:
+                message += ", detail: " + data["detail"]
 
         if 200 <= status_code < 400:
             return
@@ -84,16 +87,16 @@ class DeepL:
         elif status_code == 429:
             raise TooManyRequestsException(f"Too many requests{message}")
         else:
-            raise DeepLException(f"Unexpected error: {json}")
+            raise DeepLException(f"Unexpected error: {data}")
 
     async def request(
         self,
         method: str,
         endpoint: str,
-        headers: typing.Dict[str, typing.Any] = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
         **kwargs: typing.Any,
     ) -> typing.Any:
-        headers = headers or {}
+        headers = dict(headers or {})
 
         headers["Authorization"] = "DeepL-Auth-Key " + self.token
 
@@ -110,11 +113,16 @@ class DeepL:
         data = await self.request("GET", "usage")
         return Usage(**data)
 
-    # TODO: Cache
     async def get_languages(self, target: bool = True) -> typing.List[Language]:
+        if languages := self._languages[target]:
+            return languages
+
         data = {"type": "target" if target else "source"}
         json = await self.request("GET", "languages", data=data)
-        return [Language(**i) for i in json]
+        languages = [Language(**i) for i in json]
+
+        self._languages[target].extend(languages)
+        return languages
 
     async def _supports_formality(self, lang: str) -> bool:
         languages = await self.get_languages(target=True)
@@ -128,9 +136,9 @@ class DeepL:
         self,
         text: str,
         *,
-        source_lang: str = None,
+        source_lang: typing.Optional[str] = None,
         target_lang: str,
-        formal: bool = None,
+        formal: typing.Optional[bool] = None,
     ) -> typing.List[TextResult]:
 
         data: typing.Dict[str, typing.Any] = {}
@@ -150,9 +158,9 @@ class DeepL:
         self,
         text: str,
         *,
-        source_lang: str = None,
+        source_lang: typing.Optional[str] = None,
         target_lang: str,
-        formal: bool = None,
+        formal: typing.Optional[bool] = None,
     ) -> str:
         data = await self._translate(
             text,

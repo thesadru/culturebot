@@ -1,22 +1,24 @@
 # hikari
-hikari @ git+https://github.com/hikari-py/hikari#egg=hikari[speedups]
+hikari[speedups]
 
-alluka @ git+https://github.com/FasterSpeeding/Alluka
-hikari-tanjun @ git+https://github.com/FasterSpeeding/Tanjun
-hikari-yuyo @ git+https://github.com/FasterSpeeding/Yuyo
+hikari-tanjun
+hikari-yuyo==1.0.5a1.post1
+alluka
 
-hikari-tanchi @ git+https://github.com/thesadru/tanchi
+hikari-tanchi
 
 # meta
+nox
 typing_extensions
 PyYAML
 psutil
 python-dotenv
-black
-mypy
 
 # db
-odmantic
+asyncpg
+sqlalchemy[asyncio]
+sqlalchemy-stubs
+sqlmodel
 
 # utils
 thefuzz[speedup]
@@ -24,6 +26,9 @@ attrs
 pydantic
 
 # components
+black
+isort
+
 pysaucenao
 
 # debugging

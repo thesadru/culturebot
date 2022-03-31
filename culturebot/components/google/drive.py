@@ -5,8 +5,9 @@ import logging
 import typing
 
 import aiohttp
-import yarl
+import aiohttp.typedefs
 import hikari
+import yarl
 
 __all__ = ["Drive"]
 
@@ -85,7 +86,7 @@ class Folder(Resource):
 class Google:
     BASE_URL: yarl.URL
 
-    def __init__(self, key: str, session: aiohttp.ClientSession = None) -> None:
+    def __init__(self, key: str, session: typing.Optional[aiohttp.ClientSession] = None) -> None:
         self.key = key
         self._session = session
 
@@ -100,10 +101,10 @@ class Google:
         self,
         path: str,
         method: str = "GET",
-        params: dict[str, typing.Any] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         **kwargs: typing.Any,
     ) -> typing.Any:
-        params = params or {}
+        params = dict(params or {})
         params["key"] = self.key
 
         async with self.session.request(method, self.BASE_URL / path, params=params, **kwargs) as response:
@@ -123,10 +124,10 @@ class Google:
         self,
         path: str,
         method: str = "GET",
-        params: dict[str, typing.Any] = None,
+        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         **kwargs: typing.Any,
     ) -> aiohttp.StreamReader:
-        params = params or {}
+        params = dict(params or {})
         params["key"] = self.key
         params["alt"] = "media"
 

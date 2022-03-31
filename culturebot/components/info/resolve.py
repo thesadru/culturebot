@@ -154,8 +154,11 @@ async def resolve_argument_rest(context: tanjun.abc.Context, argument: str):
         return value
 
     if match := INVITE_PATTERN.match(argument):
-        if invite := await rest.fetch_invite(match[1]):
-            return invite
+        try:
+            if invite := await rest.fetch_invite(match[1]):
+                return invite
+        except (hikari.NotFoundError, hikari.ForbiddenError):
+            pass
 
     return None
 

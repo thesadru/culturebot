@@ -1,7 +1,13 @@
 import typing
-from aiohttp import web
+
 import aiohttp
+import alluka
 import yarl
+from aiohttp import web
+
+from culturebot import sql
+from culturebot.sql.models import oauth as oauth_models
+from server import dependencies
 
 routes = web.RouteTableDef()
 
@@ -16,6 +22,8 @@ class Oauth2(web.AbstractRouteDef):
     client_id: str
     client_secret: str
     scopes: list[str]
+
+    oauth_model: typing.Type[typing.Any] = dict
 
     def __init__(
         self,
@@ -54,9 +62,8 @@ class Oauth2(web.AbstractRouteDef):
             "response_type": "code",
             "scope": " ".join(self.scopes),
         }
-        print(query)
 
-        location = self.AUTHORIZE_URL.with_query(query)
+        location = self.AUTHORIZE_URL.update_query(query)
         return web.HTTPTemporaryRedirect(location=location)
 
     async def callback(self, request: web.Request) -> web.Response:
@@ -75,13 +82,25 @@ class Oauth2(web.AbstractRouteDef):
         async with self.session.post(self.TOKEN_URL, headers=headers, data=body) as r:
             data = await r.json()
 
-        return await self.on_login(request, data)
+        return await self.on_login(request, self.oauth_model(**data))
 
-    async def on_login(self, request: web.Request, data: dict[str, typing.Any]) -> web.Response:
+    async def on_login(self, request: web.Request, data: typing.Any) -> web.Response:
         return web.json_response(data)
 
     async def on_error(self, request: web.Request, error: str) -> web.Response:
         raise web.HTTPInternalServerError(text=f"Unhandled OAuth2 Error: {error}")
+
+
+class StorerOauth(Oauth2):
+    oauth_model = oauth_models.OAuth
+
+    @dependencies.injected
+    async def store(self, model: typing.Any, session: alluka.Injected[sql.AsyncSession] = ...) -> None:
+        session.add(model)
+        await session.commit()
+
+    async def on_login(self, request: web.Request, data: typing.Any) -> web.Response:
+        return await super().on_login(request, data)
 
 
 class GithubOauth(Oauth2):
@@ -90,9 +109,24 @@ class GithubOauth(Oauth2):
     AUTHORIZE_URL = yarl.URL("https://github.com/login/oauth/authorize")
     TOKEN_URL = yarl.URL("https://github.com/login/oauth/access_token")
 
+    oauth_model = oauth_models.GoogleOAuth
+
 
 class GoogleOauth(Oauth2):
     NAME = "google"
 
-    AUTHORIZE_URL = yarl.URL("https://accounts.google.com/o/oauth2/v2/auth")
+    AUTHORIZE_URL = yarl.URL("https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent")
     TOKEN_URL = yarl.URL("https://oauth2.googleapis.com/token")
+
+    async def on_login(self, request: web.Request, data: dict[str, typing.Any]) -> web.Response:
+        headers = {"Authorization": f"Bearer {data['access_token']}"}
+
+        async with self.session.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo?alt=json", headers=headers
+        ) as response:
+            print(await response.text())
+            data = await response.json()
+
+        return web.json_response(data)
+
+    oauth_model = oauth_models.GithubOauth

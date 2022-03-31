@@ -10,11 +10,13 @@ from ext import setei
 
 dotenv.load_dotenv(".env")
 
-__all__ = ["Tokens", "Config", "load_config"]
+__all__ = ["Config", "Tokens", "load_config"]
 
 
 class Tokens(setei.Config):
     bot: str = setei.env("BOT_TOKEN")
+
+    postgres: str = setei.env("POSTGRES")
 
     google_api_key: typing.Optional[str] = setei.env("GOOGLE_API_KEY")
     google_client_id: typing.Optional[str] = setei.env("GOOGLE_CLIENT_ID")
@@ -36,13 +38,13 @@ class Config(setei.Config):
     prefixes: typing.List[str] = setei.conf("prefixes")
     log_level: str = setei.conf("log_level", default="INFO")
     intents: hikari.Intents = setei.conf("intents", default=hikari.Intents.ALL_UNPRIVILEGED)
-    cache: hikari.CacheComponents = setei.conf("cache", default=hikari.CacheComponents.ALL)
+    cache: hikari.api.CacheComponents = setei.conf("cache", default=hikari.api.CacheComponents.ALL)
     declare_global_commands: typing.Union[typing.List[hikari.Snowflake], bool] = setei.conf("test_guilds", default=True)
 
     memebin: typing.Optional[str] = setei.conf("memebin")
 
 
-def load_config(config_path: typing.Union[str, os.PathLike[str]] = None) -> Config:
+def load_config(config_path: typing.Optional[typing.Union[str, os.PathLike[str]]] = None) -> Config:
     path = pathlib.Path(config_path or "config.yaml")
     config = yaml.safe_load(path.read_text())
 

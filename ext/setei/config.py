@@ -7,9 +7,6 @@ import typing
 from . import fields
 from .fields import issubclass_
 
-if typing.TYPE_CHECKING:
-    import devtools
-
 __all__ = ["ConfigMeta", "Config"]
 
 ConfigT = typing.TypeVar("ConfigT", bound="Config")
@@ -54,7 +51,7 @@ class Config(metaclass=ConfigMeta):
     @classmethod
     def load(
         cls: typing.Type[ConfigT],
-        configuration: typing.Union[typing.Mapping[str, typing.Any], os.PathLike, str],
+        configuration: typing.Union[typing.Mapping[str, typing.Any], os.PathLike[str], str],
     ) -> ConfigT:
         """Load the config from a yaml file and env vars"""
         if isinstance(configuration, (str, os.PathLike)):

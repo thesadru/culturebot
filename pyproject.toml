@@ -1,15 +1,18 @@
-
 [tool.black]
-line-length     = 120
-target-version  = ["py39"]
+line-length = 120
+target-version = ["py39"]
 
 [tool.isort]
 profile = "black"
 
 
 [tool.pyright]
+include = ["culturebot", "ext", "server"]
+exclude = ["**/__init__.py", "tests/**"]
+
 typeCheckingMode = "basic"
-strictParameterNoneValue = false
 
 [tool.mypy]
-
+ignore_missing_imports = true
+install_types = true
+non_interactive = true

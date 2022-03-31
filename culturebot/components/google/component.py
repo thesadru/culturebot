@@ -2,11 +2,9 @@ import asyncio
 import datetime
 import random
 import typing
-import warnings
 
 import aiohttp
 import alluka
-import hikari
 import tanchi
 import tanjun
 
@@ -50,7 +48,7 @@ async def gather_files_recursively(
 async def gather_memebin_files(
     drive: alluka.Injected[Drive],
     config: alluka.Injected[config.Config],
-):
+) -> typing.Sequence[File]:
     """Gather all files as a cached callback"""
     if config.memebin is None:
         return []
@@ -67,7 +65,7 @@ def filter_files(
 ) -> typing.Sequence[File]:
     """Filter files by some pre-set configuration."""
     if max_size:
-        files = [file for file in files if file.size < max_size]
+        files = [file for file in files if file.size <= max_size]
 
     if mimetype and mimetype != "any":
         files = [file for file in files if mimetype in file.mimetype]
@@ -86,7 +84,7 @@ async def meme(
     context: tanjun.context.SlashContext,
     max_size: int = 0x600000,
     mimetype: typing.Literal["any", "video", "image"] = "any",
-    filename: str = None,
+    filename: typing.Optional[str] = None,
     *,
     files: typing.Sequence[File] = alluka.inject(callback=gather_memebin_files),
 ):

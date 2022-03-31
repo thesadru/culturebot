@@ -1,10 +1,9 @@
-import difflib
-
 import aiohttp
 import tanchi
 import tanjun
 
 from culturebot import config
+from culturebot.utility import fuzz
 
 from .deepl import DeepL
 
@@ -45,11 +44,10 @@ async def autocomplete_target_lang(
     deepl: DeepL = tanjun.inject(type=DeepL),
 ) -> None:
     languages = {l.name: l.language for l in await deepl.get_languages(target=True)}
-    matches = difflib.get_close_matches(lang, languages, n=10, cutoff=0.3)
-    resolved = {match: languages[match] for match in matches}
+    resolved = fuzz.extract_mapping(lang, languages)
 
     if len(resolved) == 0:
-        languages = dict(tuple(languages.items())[:25])
+        languages = sorted(languages.items())[:25]
         await context.set_choices(languages)
         return
 

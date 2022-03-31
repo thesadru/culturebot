@@ -4,7 +4,6 @@ import contextlib
 import inspect
 import io
 import re
-import sys
 import time
 import traceback
 import typing
@@ -14,6 +13,8 @@ import devtools
 import hikari
 import tanjun
 import yuyo
+
+from culturebot.utility import files
 
 # THIS IS STOLEN FROM REINHARD
 # PURELY FOR TESTING, NOT MEANT TO BE A FEATURE OF THE BOT
@@ -58,11 +59,7 @@ async def eval_python_code(
     stdout = io.StringIO()
     stderr = io.StringIO()
 
-    stack = contextlib.ExitStack()
-    stack.enter_context(contextlib.redirect_stdout(stdout))
-    stack.enter_context(contextlib.redirect_stderr(stderr))
-
-    with stack:
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
         start_time = time.perf_counter()
         try:
             r = await eval_python_code_no_capture(context, "<string>", code)
@@ -83,7 +80,7 @@ async def eval_python_code_no_capture(
     context: tanjun.abc.Context,
     file_name: str,
     code: str,
-) -> tuple[str, typing.Any]:
+) -> typing.Any:
     try:
         compiled_code = compile(code, file_name, "eval", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
     except SyntaxError:
@@ -113,13 +110,16 @@ async def eval_python_code_no_capture(
     return r
 
 
+CODE_RE = re.compile(r"(?:```\w{0,2}|`)([^`]+?)(?:```|`)", re.M)
+
+
 @tanjun.as_message_command("eval", "exec")
 async def eval_command(
     context: tanjun.abc.MessageContext,
 ) -> None:
     assert context.message.content is not None  # This shouldn't ever be the case in a command client.
 
-    code = re.findall(r"```(?:[\w]*\n?)([\s\S(^\\`{3})]*?)\n*```", context.message.content)
+    code = CODE_RE.findall(context.message.content)
     if not code:
         raise tanjun.CommandError("Expected a python code block.")
 
@@ -140,14 +140,12 @@ async def reload_bot(
     *,
     client: tanjun.Client = tanjun.inject(type=tanjun.Client),
 ):
-    # TODO: Utils file?
-    from culturebot.client import search_directory
 
-    await client.reload_modules_async(*search_directory("culturebot/components"))
+    await client.reload_modules_async(*files.search_directory("culturebot/components"))
 
     await context.respond("Reloaded all!", reply=True)
 
 
 component = tanjun.Component(name="eval").load_from_scope()
-# component.add_check(tanjun.checks.OwnerCheck())
+component.add_check(tanjun.checks.OwnerCheck())
 loader = component.make_loader()

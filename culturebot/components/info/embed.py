@@ -238,7 +238,7 @@ def inviteinfo(invite: hikari.Invite):
             "Target Activity",
             f"Name: {invite.target_application.name}\n"
             f"ID: `{invite.target_application.id}`\n"
-            f"Description: {invite.target_application.description or invite.target_application.summary}\n"
+            f"Description: {invite.target_application.description}\n"
             f"Public Key: `{invite.target_application.public_key.hex()}`",
         )
 

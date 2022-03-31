@@ -1,7 +1,6 @@
 import typing
 
 import aiohttp
-import devtools
 import hikari
 import hikari.files
 import pysaucenao
@@ -38,10 +37,10 @@ def check_url_or_attachment(
 @tanchi.as_slash_command()
 async def tracemoe(
     context: tanjun.context.SlashContext,
-    url: str = None,
-    attachment: hikari.Attachment = None,
+    url: typing.Optional[str] = None,
+    attachment: typing.Optional[hikari.Attachment] = None,
     cut_borders: bool = False,
-    anilist_id: int = None,
+    anilist_id: typing.Optional[int] = None,
     result_size: typing.Literal["s", "m", "l"] = "l",
     *,
     session: aiohttp.ClientSession = tanjun.inject(type=aiohttp.ClientSession),
@@ -49,18 +48,12 @@ async def tracemoe(
 ):
     """Gets the anime source using trace.moe
 
-    Parameters
-    ----------
-    url : str
-        URL link to an image.
-    attachment : hikari.Attachment
-        An image attachment.
-    cut_borders : bool
-        whether to enable black border crop
-    anilist_id : int
-        search for a matching scene only in a particular anime by Anilist ID
-    result_size : str
-        the size of the resulting image, defaults to Large
+    Args:
+        url: URL link to an image.
+        attachment: An image attachment.
+        cut_borders: whether to enable black border crop
+        anilist_id: search for a matching scene only in a particular anime by Anilist ID
+        result_size: the size of the resulting image, defaults to Large
     """
     url = check_url_or_attachment(context, url, attachment)
 
@@ -198,19 +191,16 @@ def parse_saucenao_source(source: pysaucenao.GenericSource) -> hikari.Embed:
 @tanchi.as_slash_command()
 async def saucenao(
     context: tanjun.context.SlashContext,
-    url: str = None,
-    attachment: hikari.Attachment = None,
+    url: typing.Optional[str] = None,
+    attachment: typing.Optional[hikari.Attachment] = None,
     *,
     saucenao: pysaucenao.SauceNao = tanjun.inject(type=pysaucenao.SauceNao),
 ):
     """Gets the source using sauceNAO
 
-    Parameters
-    ----------
-    url : str
-        URL link to an image.
-    attachment : hikari.Attachment
-        An image attachment.
+    Args:
+        url: URL link to an image.
+        attachment: An image attachment.
     """
     url = check_url_or_attachment(context, url, attachment)
 
@@ -231,7 +221,7 @@ async def saucenao(
     await context.respond(embeds=embeds)
 
 
-def find_message_attachment(message: hikari.Message) -> typing.Optional[hikari.files.Resource]:
+def find_message_attachment(message: hikari.Message) -> typing.Optional[hikari.files.Resource[typing.Any]]:
     """Find an attachment in a message"""
     if message.attachments:
         return message.attachments[0]
