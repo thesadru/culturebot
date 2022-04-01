@@ -10,7 +10,7 @@ import devtools
 import hikari
 import hikari.applications
 import tanjun
-import yuyo
+from sqlalchemy.ext import asyncio as asqlalchmey
 
 from . import config, sql
 from .utility import files
@@ -45,10 +45,8 @@ def build_gateway_bot(
         cache_settings=hikari.impl.CacheSettings(components=configuration.cache),
     )
 
-    # TODO: Deletion custom id
-    component_client = yuyo.ComponentClient.from_gateway_bot(bot, event_managed=False)
-
-    session = sql.create_session(configuration.tokens.postgres, future=True)
+    engine = sql.create_engine(configuration.tokens.postgres, future=True)
+    session = sql.create_session(engine)
 
     # TODO: on_error
     client = (
@@ -58,13 +56,11 @@ def build_gateway_bot(
             declare_global_commands=configuration.declare_global_commands,
         )
         .add_prefix(configuration.prefixes)
-        .add_client_callback(tanjun.ClientCallbackNames.STARTING, component_client.open)
-        .add_client_callback(tanjun.ClientCallbackNames.CLOSING, component_client.close)
-        .add_client_callback(tanjun.ClientCallbackNames.STARTING, functools.partial(sql.create_tables, session.bind))
+        .add_client_callback(tanjun.ClientCallbackNames.STARTING, functools.partial(sql.create_tables, engine))
         .add_client_callback(tanjun.ClientCallbackNames.CLOSING, session.close)
         .add_client_callback(tanjun.ClientCallbackNames.STARTING, starting)
         .add_client_callback(tanjun.ClientCallbackNames.CLOSING, closing)
-        .set_type_dependency(yuyo.ComponentClient, component_client)
+        .set_type_dependency(asqlalchmey.AsyncEngine, engine)
         .set_type_dependency(sql.AsyncSession, session)
         .set_type_dependency(config.Config, configuration)
         .set_type_dependency(config.Tokens, configuration.tokens)

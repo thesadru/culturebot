@@ -25,6 +25,9 @@ class Tokens(setei.Config):
     github_client_id: typing.Optional[str] = setei.env("GITHUB_CLIENT_ID")
     github_client_secret: typing.Optional[str] = setei.env("GITHUB_CLIENT_SECRET")
 
+    discord_client_id: typing.Optional[str] = setei.env("DISCORD_CLIENT_ID")
+    discord_client_secret: typing.Optional[str] = setei.env("DISCORD_CLIENT_SECRET")
+
     redis_address: typing.Optional[str] = setei.env("REDIS_ADDRESS")
     redis_password: typing.Optional[str] = setei.env("REDIS_PASSWORD")
 
@@ -44,11 +47,23 @@ class Config(setei.Config):
     memebin: typing.Optional[str] = setei.conf("memebin")
 
 
-def load_config(config_path: typing.Optional[typing.Union[str, os.PathLike[str]]] = None) -> Config:
+_cached: Config = NotImplemented
+
+
+def load_config(
+    config_path: typing.Optional[typing.Union[str, os.PathLike[str]]] = None,
+    *,
+    force: bool = False,
+) -> Config:
+    """Load the main configuration."""
+    global _cached
+    if not force and _cached is not NotImplemented:
+        return _cached
+
     path = pathlib.Path(config_path or "config.yaml")
     config = yaml.safe_load(path.read_text())
 
-    return Config.load(config)
+    return (_cached := Config.load(config))
 
 
 if __name__ == "__main__":

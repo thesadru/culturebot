@@ -1,5 +1,6 @@
 import dataclasses
 import inspect
+import re
 import typing
 import unicodedata
 
@@ -444,30 +445,44 @@ def colorinfo(color: hikari.Color):
     return embed
 
 
-@register_info
-def characterinfo(characters: str):
-    char_list = []
-    raw_list = []
-
-    for char in characters:
+def get_ucode(chars: str) -> str:
+    codes = ""
+    for char in chars:
         digit = f"{ord(char):x}"
         if len(digit) <= 4:
-            u_code = f"\\u{digit:>04}"
+            codes += f"\\u{digit:>04}"
         else:
-            u_code = f"\\U{digit:>08}"
+            codes += f"\\U{digit:>08}"
 
-        url = f"https://www.compart.com/en/unicode/U+{digit:>04}"
+    return codes
+
+
+@register_info
+def characterinfo(string: str):
+    string = re.sub(
+        r"\\[uU]([a-fA-F0-9]{4,8})",
+        lambda match: chr(int(match[1], 16)),
+        string,
+    )
+
+    char_list = []
+    for char in string:
+        url = f"https://www.compart.com/en/unicode/U+{ord(char):x}"
         name = f"[{unicodedata.name(char, '')}]({url})"
-        # TODO: Escape markdown?
-        info = f"`{u_code.ljust(10)}` {name} - {char}"
-
+        info = f"`{get_ucode(char).ljust(10)}` {name} - {char}"
         char_list.append(info)
-        raw_list.append(u_code)
 
     embed = (
         hikari.Embed(description="\n".join(char_list))
         .set_author(name="Character Info")
-        .add_field(name="Full Raw Text", value=f"`{''.join(raw_list)}`", inline=False)
+        .add_field(name="Full Raw Text", value=f"`{get_ucode(string)}`", inline=False)
+        .add_field(
+            name="Normalized",
+            value="\n".join(
+                f"{k}: `{get_ucode(norm := unicodedata.normalize(k, string))}` ({norm})"
+                for k in ("NFC", "NFKC", "NFD", "NFKD")
+            ),
+        )
     )
 
     return embed

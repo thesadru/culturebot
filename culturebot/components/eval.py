@@ -12,9 +12,8 @@ from collections import abc as collections
 import devtools
 import hikari
 import tanjun
-import yuyo
 
-from culturebot.utility import files
+from culturebot.utility import files, formatting
 
 # THIS IS STOLEN FROM REINHARD
 # PURELY FOR TESTING, NOT MEANT TO BE A FEATURE OF THE BOT
@@ -125,11 +124,10 @@ async def eval_command(
 
     results = await eval_python_code(context, code[0])
 
-    for page, index in yuyo.sync_paginate_string(
-        results.stream_iterator(),
-        wrapper="```diff\n{}\n```",
-        char_limit=1900,
-        line_limit=1000,
+    for page in formatting.paginate_string(
+        "\n".join(results.stream_iterator()),
+        codeblock="diff",
+        size=2000,
     ):
         await context.respond(page, reply=True)
 

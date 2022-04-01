@@ -24,7 +24,6 @@ def format_code(string: str, line_length: int = 88, sort_imports: bool = False) 
         return "# Couldn't format this code block due to a syntax error\n" + string
 
     if sort_imports:
-        print("Sorting imports...")
         string = isort.api.sort_code_string(string, line_length=line_length, profile="black")
 
     return string

@@ -31,7 +31,9 @@ async def translate(
     *,
     deepl: DeepL = tanjun.inject(type=DeepL),
 ):
-    """Translate text"""
+    """Translate text."""
+    await context.create_initial_response("disabled", ephemeral=True)
+
     text = await deepl.translate(text, target_lang=target_language, formal=formal)
     await context.respond(text)
 

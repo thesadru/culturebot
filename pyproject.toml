@@ -11,6 +11,12 @@ include = ["culturebot", "ext", "server"]
 exclude = ["**/__init__.py", "tests/**"]
 
 typeCheckingMode = "basic"
+reportConstantRedefinition = true
+reportFunctionMemberAccess = true
+reportIncompatibleVariableOverride = true
+reportInconsistentConstructor = true
+reportMissingTypeArgument = true
+reportUnusedImport = true
 
 [tool.mypy]
 ignore_missing_imports = true

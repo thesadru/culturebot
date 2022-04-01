@@ -2,10 +2,8 @@
 hikari[speedups]
 
 hikari-tanjun
-hikari-yuyo==1.0.5a1.post1
-alluka
-
 hikari-tanchi
+alluka
 
 # meta
 nox
@@ -30,6 +28,7 @@ black
 isort
 
 pysaucenao
+genshin @ git+https://github.com/thesadru/genshin.py@rewrite
 
 # debugging
 devtools

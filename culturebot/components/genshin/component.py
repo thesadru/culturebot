@@ -50,7 +50,7 @@ async def register(
         await context.respond(f"Changed uid to {uid}")
     else:
         user = genshin_models.GenshinUser(
-            uid=uid,
+            genshin_uid=uid,
             hoyolab_id=hoyolab_id,
             discord_id=str(context.author.id),
             cookies=cookies,
