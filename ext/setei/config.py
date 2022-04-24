@@ -53,7 +53,7 @@ class Config(metaclass=ConfigMeta):
         cls: typing.Type[ConfigT],
         configuration: typing.Union[typing.Mapping[str, typing.Any], os.PathLike[str], str],
     ) -> ConfigT:
-        """Load the config from a yaml file and env vars"""
+        """Load the config from a yaml file and env vars."""
         if isinstance(configuration, (str, os.PathLike)):
             import yaml
 
@@ -71,7 +71,7 @@ class Config(metaclass=ConfigMeta):
         return cls(**kwargs)
 
     def __pretty__(self, fmt: typing.Callable[[typing.Any], str], **kwargs: typing.Any):
-        """Devtools pretty formatting"""
+        """Devtools pretty formatting."""
         yield type(self).__name__
         yield "("
         yield 1

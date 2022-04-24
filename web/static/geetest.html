@@ -1,62 +1,67 @@
 <!DOCTYPE html>
 <html>
-  <body>
+
+<body>
     <p id="form">
-      <label for="account">Email:</label>
-      <input type="text" id="account" />
-      <label for="password">Password:</label>
-      <input type="password" id="password" />
-      <button type="button" id="login">Login</button>
+        <label for="account">Email:</label>
+        <input type="text" id="account" />
+        <label for="password">Password:</label>
+        <input type="password" id="password" />
+        <button type="button" id="login">Login</button>
     </p>
-  </body>
-  <script src="./gt.js"></script>
-  <script>
+    <p id="output"></p>
+</body>
+<script src="./gt.js"></script>
+<script>
+    // if this was a good implementation we would get the mmt on-demand
     now = Math.round(Date.now());
 
     fetch(`/api/mihoyo/mmt?now=${now}`)
-      .then((response) => response.json())
-      .then((mmt) =>
-        window.initGeetest(
-          {
-            gt: mmt.gt,
-            challenge: mmt.challenge,
-            new_captcha: mmt.new_captcha,
-            api_server: "api-na.geetest.com",
-            lang: "en",
-            product: "bind",
-            https: false,
-          },
-          (captcha) => {
-            captcha.appendTo("login");
-            captcha.onSuccess(() => {
-              fetch("/api/mihoyo/login", {
-                method: "POST",
-                body: JSON.stringify({
-                  account: document.getElementById("account").value,
-                  password: document.getElementById("password").value,
-                  mmt_key: mmt.mmt_key,
-                  geetest: captcha.getValidate(),
-                }),
-                headers: {
-                  "Content-Type": "application/json",
+        .then((response) => response.json())
+        .then((mmt) =>
+            window.initGeetest(
+                {
+                    gt: mmt.gt,
+                    challenge: mmt.challenge,
+                    new_captcha: mmt.new_captcha,
+                    api_server: "api-na.geetest.com",
+                    lang: "en",
+                    product: "bind",
+                    https: false,
                 },
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if ("retcode" in data) {
-                    message = data.message;
-                  } else {
-                    message = JSON.stringify(data);
-                  }
+                (captcha) => {
+                    captcha.appendTo("login");
+                    captcha.onSuccess(() => {
+                        fetch("/api/mihoyo/login", {
+                            method: "POST",
+                            body: JSON.stringify({
+                                account: document.getElementById("account").value,
+                                password: document.getElementById("password").value,
+                                mmt_key: mmt.mmt_key,
+                                geetest: captcha.getValidate(),
+                            }),
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                        )
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if ("retcode" in data) {
+                                    message = data.message;
+                                } else {
+                                    message = JSON.stringify(data);
+                                }
 
-                  document.getElementById("form").innerHTML += message;
-                });
-            });
-            document.getElementById("login").onclick = () => {
-              return captcha.verify();
-            };
-          }
-        )
-      );
-  </script>
+                                document.getElementById("output").innerHTML = message;
+                            });
+                    });
+                    document.getElementById("login").onclick = () => {
+                        return captcha.verify();
+                    };
+                }
+            )
+        );
+</script>
+
 </html>

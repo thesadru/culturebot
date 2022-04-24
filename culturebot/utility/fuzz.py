@@ -11,7 +11,7 @@ T = typing.TypeVar("T")
 
 
 class ReversedMapping(dict[str, typing.Any]):
-    """Mapping for thefuzz because it wants values as keys"""
+    """Mapping for thefuzz because it wants values as keys."""
 
     def items(self) -> typing.Any:
         return [(value, key) for key, value in super().items()]
@@ -19,12 +19,12 @@ class ReversedMapping(dict[str, typing.Any]):
 
 def extract_with_scores(
     query: str,
-    choices: typing.Iterable[str],
+    choices: typing.Collection[str],
     limit: typing.Optional[int] = None,
     *,
     cutoff: float = 0.2,
-    processor: typing.Callable[[str], str] = thefuzz.utils.full_process,
-    scorer: typing.Callable[[str, str], int] = thefuzz.fuzz.WRatio,
+    processor: typing.Callable[[str], str] = thefuzz.utils.full_process,  # type: ignore[reportUnknownMemberType]
+    scorer: typing.Callable[[str, str], int] = thefuzz.fuzz.WRatio,  # type: ignore[reportUnknownMemberType]
 ) -> list[tuple[int, str, typing.Any]]:
     """Extract the best matches in an iterable.
 
@@ -34,9 +34,9 @@ def extract_with_scores(
         cutoff *= 100
 
     if isinstance(choices, typing.Mapping):
-        choices = ReversedMapping(choices)
+        choices = ReversedMapping(typing.cast("typing.Mapping[str, typing.Any]", choices))
 
-    extracted: typing.Sequence[typing.Any] = thefuzz.process.extractBests(
+    extracted: typing.Sequence[typing.Any] = thefuzz.process.extractBests(  # type: ignore[reportUnknownMemberType]
         query,
         choices,
         limit=limit or sys.maxsize,
@@ -84,7 +84,7 @@ def extract(
     *,
     cutoff: float = 0.2,
 ) -> typing.Sequence[typing.Any]:
-    """Extract the best matches as a list of values"""
+    """Extract the best matches as a list of values."""
     extracted = extract_with_scores(query, choices, limit=limit, cutoff=cutoff)
 
     return [value for score, choice, value in extracted]
@@ -97,7 +97,7 @@ def extract_mapping(
     *,
     cutoff: float = 0.2,
 ) -> typing.Mapping[str, T]:
-    """Extract the best matches as a mapping"""
+    """Extract the best matches as a mapping."""
     extracted = extract_with_scores(query, choices, limit=limit, cutoff=cutoff)
 
     return {choice: value for score, choice, value in extracted}

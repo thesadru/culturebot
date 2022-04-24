@@ -8,7 +8,7 @@ import yaml
 
 from ext import setei
 
-dotenv.load_dotenv(".env")
+dotenv.load_dotenv(".env")  # type: ignore[reportUnknownMemberType]
 
 __all__ = ["Config", "Tokens", "load_config"]
 
@@ -36,15 +36,21 @@ class Tokens(setei.Config):
     deepl_key: typing.Optional[str] = setei.env("DEEPL_KEY")
 
 
+class Memebin(setei.Config):
+    file: str = setei.conf("memebin.file")
+    user: str = setei.conf("memebin.user")
+
+
 class Config(setei.Config):
     tokens: Tokens
+
     prefixes: typing.List[str] = setei.conf("prefixes")
     log_level: str = setei.conf("log_level", default="INFO")
     intents: hikari.Intents = setei.conf("intents", default=hikari.Intents.ALL_UNPRIVILEGED)
     cache: hikari.api.CacheComponents = setei.conf("cache", default=hikari.api.CacheComponents.ALL)
     declare_global_commands: typing.Union[typing.List[hikari.Snowflake], bool] = setei.conf("test_guilds", default=True)
 
-    memebin: typing.Optional[str] = setei.conf("memebin")
+    memebin: Memebin
 
 
 _cached: Config = NotImplemented
@@ -67,6 +73,6 @@ def load_config(
 
 
 if __name__ == "__main__":
-    import devtools
+    from ext import prettier
 
-    devtools.debug(load_config())
+    prettier.debug(load_config())

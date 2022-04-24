@@ -15,7 +15,7 @@ async def info(
     *,
     my_user: hikari.OwnUser = tanjun.inject_lc(hikari.OwnUser),
 ):
-    """Get the info of any object"""
+    """Get the info of any object."""
     resolved = await resolve_argument(context, obj)
 
     if isinstance(resolved, hikari.PartialUser) and resolved.id == my_user.id:

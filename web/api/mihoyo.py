@@ -1,8 +1,12 @@
+import asyncio
 import typing
 
 import fastapi
 import genshin
 import pydantic
+
+import culturebot
+from web import dependencies
 
 __all__ = ["router", "handle_genshin_exception"]
 
@@ -17,15 +21,30 @@ class LoginRequest(pydantic.BaseModel):
     geetest: typing.Dict[str, str]
 
 
-@router.get("/mmt")
+@router.get("/mmt", response_model=typing.Mapping[str, str])
 async def mmt(now: int):
     return await genshin.utility.geetest.create_mmt(now)
 
 
-@router.post("/login", response_model=list[genshin.models.GenshinAccount])
-async def login(data: LoginRequest, lang: typing.Optional[str] = None):
-    client = genshin.Client()
-    cookies = await client.login_with_geetest(data.account, data.password, data.mmt_key, data.geetest)
+@router.post("/login", response_model=typing.Sequence[genshin.models.GenshinAccount])
+async def login(
+    data: LoginRequest,
+    lang: typing.Optional[str] = None,
+    session: culturebot.sql.Connection = fastapi.Depends(dependencies.connection),
+    oauth: typing.Mapping[str, culturebot.sql.models.OAuth] = fastapi.Depends(dependencies.get_oauth),
+):
+    client = genshin.Client(debug=True)
+    await client.login_with_geetest(data.account, data.password, data.mmt_key, data.geetest)
+    assert isinstance(client.cookie_manager, genshin.client.CookieManager)
+
+    asyncio.create_task(
+        session.insert(
+            "auth.genshin",
+            discord_id=int(oauth["discord"].user_id),
+            hoyolab_id=client.cookie_manager.user_id,
+            cookies=client.cookie_manager.header,
+        )
+    )
 
     return await client.get_game_accounts(lang=lang)
 

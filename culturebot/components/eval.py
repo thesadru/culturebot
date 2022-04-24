@@ -9,16 +9,17 @@ import traceback
 import typing
 from collections import abc as collections
 
-import devtools
 import hikari
 import tanjun
 
+from culturebot import sql
 from culturebot.utility import files, formatting
+from ext import prettier
 
 # THIS IS STOLEN FROM REINHARD
 # PURELY FOR TESTING, NOT MEANT TO BE A FEATURE OF THE BOT
 
-pformat = devtools.PrettyFormat(width=100, indent_step=2)
+pformat = prettier.PrettyFormat(width=100, indent_step=2)
 
 
 class EvaluationResult(typing.NamedTuple):
@@ -35,7 +36,7 @@ class EvaluationResult(typing.NamedTuple):
         return {"stdout": self.stdout, "stderr": self.stderr}
 
     def stream_iterator(self) -> collections.Iterator[str]:
-        """Iterate over the stream and yield all lines"""
+        """Iterate over the stream and yield all lines."""
         for name, stream in self.streams.items():
             if not (lines := stream.readlines(1)):
                 continue
@@ -89,9 +90,10 @@ async def eval_python_code_no_capture(
         "asyncio": asyncio,
         "hikari": hikari,
         "tanjun": tanjun,
+        "connection": context.get_type_dependency(sql.Connection),
         "pformat": pformat,
-        "pprint": lambda v, **kw: print(pformat(v), **kw),
-        "debug": devtools.debug,
+        "pprint": pformat.pprint,
+        "debug": prettier.debug,
     }
     localns = {
         "app": context.shards,

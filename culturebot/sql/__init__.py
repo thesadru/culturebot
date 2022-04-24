@@ -1,3 +1,2 @@
 from . import models
-from .patch import *
-from .session import *
+from .connection import *

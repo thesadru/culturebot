@@ -8,31 +8,34 @@ import alluka
 import tanchi
 import tanjun
 
-from culturebot import config
+from culturebot import config, sql
 from culturebot.utility import dependencies, fuzz, pretty
+from ext import oauth
 
 from .drive import Drive, File, Folder
 
 component = tanjun.Component(name="google")
 
 
-@component.with_client_callback(tanjun.ClientCallbackNames.STARTING)
-async def on_starting(
+@component.with_client_callback(tanjun.ClientCallbackNames.STARTED)
+async def on_started(
     client: alluka.Injected[tanjun.Client],
-    tokens: alluka.Injected[config.Tokens],
+    config: alluka.Injected[config.Config],
+    connection: alluka.Injected[sql.Connection],
+    google_service: alluka.Injected[oauth.GoogleOAuth],
     session: alluka.Injected[aiohttp.ClientSession],
 ):
-    if not tokens.google_api_key:
-        return
+    oauth_model = await connection.select(sql.models.OAuth, service="google", user_id=config.memebin.user)
+    assert oauth_model is not None, "No google oauth token found"
 
-    client.set_type_dependency(Drive, Drive(tokens.google_api_key, session=session))
+    client.set_type_dependency(Drive, Drive(oauth_model.make_token(google_service), session=session))
 
 
 async def gather_files_recursively(
     drive: alluka.Injected[Drive],
     parent: str,
 ) -> typing.List[File]:
-    """Gather all files recursively"""
+    """Gather all files recursively."""
     files: typing.List[File] = []
 
     async for resource in drive.list_directory(parent, pageSize=1000):
@@ -44,16 +47,16 @@ async def gather_files_recursively(
     return files
 
 
-@dependencies.cached_callback(datetime.timedelta(hours=3))
+@dependencies.cached_callback(datetime.timedelta(hours=6))
 async def gather_memebin_files(
     drive: alluka.Injected[Drive],
     config: alluka.Injected[config.Config],
 ) -> typing.Sequence[File]:
-    """Gather all files as a cached callback"""
+    """Gather all files as a cached callback."""
     if config.memebin is None:
-        return []
+        raise ValueError("No memebin configuration found")
 
-    return await gather_files_recursively(drive, config.memebin)
+    return await gather_files_recursively(drive, config.memebin.file)
 
 
 def filter_files(
@@ -115,7 +118,7 @@ async def autocomplete(
     *,
     files: typing.Sequence[File] = alluka.inject(callback=gather_memebin_files),
 ):
-    """Autocomplete filename by adding some metadata"""
+    """Autocomplete filename by adding some metadata."""
     # TODO: Use max size and mimetype
     files = filter_files(files, max_size=0x600000, filename=filename, limit=25)
 

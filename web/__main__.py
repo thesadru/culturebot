@@ -3,4 +3,4 @@ from .app import app
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, port=5000)
+    uvicorn.run(app, port=5000)  # type: ignore

@@ -1,5 +1,8 @@
 log_level: DEBUG
 # test_guilds: [570841314200125460, 808030843078836254, 842788736008978504]
+# test_guilds: [570841314200125460]
 test_guilds: []
 intents: 0b1111111111111111
-memebin: "1--V84Zd_7mSVGpfhem3R_yENnI6rC4aL"
+memebin:
+  file: "1--V84Zd_7mSVGpfhem3R_yENnI6rC4aL"
+  user: 106630592113794056075

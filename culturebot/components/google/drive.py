@@ -9,6 +9,8 @@ import aiohttp.typedefs
 import hikari
 import yarl
 
+from ext import oauth
+
 __all__ = ["Drive"]
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,8 +88,12 @@ class Folder(Resource):
 class Google:
     BASE_URL: yarl.URL
 
-    def __init__(self, key: str, session: typing.Optional[aiohttp.ClientSession] = None) -> None:
-        self.key = key
+    def __init__(
+        self,
+        token: oauth.Token,
+        session: typing.Optional[aiohttp.ClientSession] = None,
+    ) -> None:
+        self.token = token
         self._session = session
 
     @property
@@ -101,13 +107,13 @@ class Google:
         self,
         path: str,
         method: str = "GET",
-        params: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         **kwargs: typing.Any,
     ) -> typing.Any:
-        params = dict(params or {})
-        params["key"] = self.key
+        url = self.BASE_URL / path
 
-        async with self.session.request(method, self.BASE_URL / path, params=params, **kwargs) as response:
+        await self.token.refresh()
+
+        async with self.session.request(method, url, headers=self.token.headers, **kwargs) as response:
             _LOGGER.debug(f"Requested %s (status code: %d)", path, response.status)
 
             if response.status == 204:
@@ -128,10 +134,17 @@ class Google:
         **kwargs: typing.Any,
     ) -> aiohttp.StreamReader:
         params = dict(params or {})
-        params["key"] = self.key
         params["alt"] = "media"
 
-        response = await self.session.request(method, self.BASE_URL / path, params=params, **kwargs)
+        await self.token.refresh()
+
+        response = await self.session.request(
+            method,
+            self.BASE_URL / path,
+            headers=self.token.headers,
+            params=params,
+            **kwargs,
+        )
 
         if not response.ok:
             raise Exception(f"Media ratelimited: {path}\n{await response.text()}")
@@ -149,8 +162,6 @@ class Drive(Google):
         return await self.request("files", params=params)
 
     async def search_files(self, q: str, **params: typing.Any) -> typing.AsyncIterator[Resource]:
-        folders: typing.List[Folder] = []
-
         while True:
             data = await self.request_list(q=q, **params)
             for file in data["files"]:

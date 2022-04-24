@@ -40,7 +40,8 @@ def type_check(session: nox.Session) -> None:
     """Statically analyse and veirfy this project using pyright and mypy."""
     session.install("-U", "pyright", "-r", "requirements.txt", silent=False)
 
-    session.run("python", "-m", "pyright", PACKAGE, env={"PYRIGHT_PYTHON_FORCE_VERSION": "latest"})
+    env = {"PYRIGHT_PYTHON_FORCE_VERSION": "latest"}
+    session.run("python", "-m", "pyright", PACKAGE, "-v", session.virtualenv.location, env=env)
 
 
 @nox.session(python=False)

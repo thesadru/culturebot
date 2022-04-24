@@ -465,7 +465,7 @@ def characterinfo(string: str):
         string,
     )
 
-    char_list = []
+    char_list: typing.List[str] = []
     for char in string:
         url = f"https://www.compart.com/en/unicode/U+{ord(char):x}"
         name = f"[{unicodedata.name(char, '')}]({url})"

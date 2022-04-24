@@ -7,16 +7,17 @@ profile = "black"
 
 
 [tool.pyright]
-include = ["culturebot", "ext", "server"]
-exclude = ["**/__init__.py", "tests/**"]
+include = ["culturebot", "ext", "web"]
+exclude = ["**/__init__.py", "tests/**", "ext/prettier/**"]
 
-typeCheckingMode = "basic"
-reportConstantRedefinition = true
-reportFunctionMemberAccess = true
-reportIncompatibleVariableOverride = true
-reportInconsistentConstructor = true
-reportMissingTypeArgument = true
-reportUnusedImport = true
+typeCheckingMode = "strict"
+useLibraryCodeForTypes = true
+
+reportImportCycles = false
+reportMissingTypeStubs = false
+reportIncompatibleMethodOverride = false
+reportPrivateUsage = false
+reportUnusedVariable = false
 
 [tool.mypy]
 ignore_missing_imports = true

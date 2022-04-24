@@ -12,23 +12,26 @@ PyYAML
 psutil
 python-dotenv
 
+black
+isort
+pyright
+mypy
+
 # db
 asyncpg
-sqlalchemy[asyncio]
-sqlalchemy-stubs
-sqlmodel
+asyncpg-stubs-h1
 
 # utils
 thefuzz[speedup]
 attrs
 pydantic
 
-# components
-black
-isort
-
 pysaucenao
-genshin @ git+https://github.com/thesadru/genshin.py@rewrite
+genshin[geetest]
 
 # debugging
 devtools
+
+# web
+fastapi
+uvicorn[standard]

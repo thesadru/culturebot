@@ -5,6 +5,7 @@ import hikari
 import hikari.files
 import pysaucenao
 import pysaucenao.containers
+import pysaucenao.saucenao
 import tanchi
 import tanjun
 
@@ -98,11 +99,11 @@ async def starting(
     client: tanjun.Client = tanjun.inject(type=tanjun.Client),
     tokens: config.Tokens = tanjun.inject(type=config.Tokens),
 ):
-    saucenao = pysaucenao.SauceNao(api_key=tokens.saucenao_key, min_similarity=60)
-    client.set_type_dependency(pysaucenao.SauceNao, saucenao)
+    saucenao = pysaucenao.saucenao.SauceNao(api_key=tokens.saucenao_key, min_similarity=60)
+    client.set_type_dependency(pysaucenao.saucenao.SauceNao, saucenao)
 
 
-def parse_saucenao_source(source: pysaucenao.GenericSource) -> hikari.Embed:
+def parse_saucenao_source(source: pysaucenao.containers.GenericSource) -> hikari.Embed:
     # bug with manga sources:
     if isinstance(source.author_name, list):
         source.author_name = source.author_name[0]
@@ -123,13 +124,13 @@ def parse_saucenao_source(source: pysaucenao.GenericSource) -> hikari.Embed:
 
     fields: dict[str, typing.Union[str, list[str], None]] = {}
 
-    if isinstance(source, pysaucenao.PixivSource):
+    if isinstance(source, pysaucenao.containers.PixivSource):
         embed.set_author(
             name=source.author_name,
             url=source.author_url,
             icon="https://www.pixiv.net/favicon.ico",
         )
-    if isinstance(source, pysaucenao.BooruSource):
+    if isinstance(source, pysaucenao.containers.BooruSource):
         embed.set_author(
             name=source.author_name,
             url=source.author_url,
@@ -137,12 +138,12 @@ def parse_saucenao_source(source: pysaucenao.GenericSource) -> hikari.Embed:
         )
 
         fields |= {
-            "Characters": source.characters,
-            "Material": source.material,
+            "Characters": source.characters,  # type: ignore[reportUnknownMemberType]
+            "Material": source.material,  # type: ignore[reportUnknownMemberType]
             "Boards": ", ".join(
                 f"[{name}]({url})"
                 for name in ("danbooru", "yande.re", "gelbooru")
-                for url in source.urls or []
+                for url in source.urls or []  # type: ignore[reportUnknownMemberType]
                 if name in url
             ),
         }
@@ -155,15 +156,15 @@ def parse_saucenao_source(source: pysaucenao.GenericSource) -> hikari.Embed:
         )
         embed.title = "Twitter status"
 
-    if isinstance(source, pysaucenao.VideoSource):
+    if isinstance(source, pysaucenao.containers.VideoSource):
         fields |= {
             "Episode": source.episode,
             "Timestamp": source.timestamp,
             "Release Year": source.year,
         }
-    if isinstance(source, pysaucenao.AnimeSource):
+    if isinstance(source, pysaucenao.containers.AnimeSource):
         embed.url = source.anilist_url or source.mal_url or source.anidb_url
-        if source._ids is not None:
+        if source._ids is not None:  # type: ignore[reportUnknownMemberType]
             fields |= {
                 "Databases": ", ".join(
                     f"[{name}]({url})"
@@ -176,7 +177,7 @@ def parse_saucenao_source(source: pysaucenao.GenericSource) -> hikari.Embed:
                     if url
                 )
             }
-    if isinstance(source, pysaucenao.MangaSource):
+    if isinstance(source, pysaucenao.containers.MangaSource):
         fields |= {"Chapter": source.chapter}
 
     embed.description = "\n".join(
@@ -194,9 +195,9 @@ async def saucenao(
     url: typing.Optional[str] = None,
     attachment: typing.Optional[hikari.Attachment] = None,
     *,
-    saucenao: pysaucenao.SauceNao = tanjun.inject(type=pysaucenao.SauceNao),
+    saucenao: pysaucenao.saucenao.SauceNao = tanjun.inject(type=pysaucenao.saucenao.SauceNao),
 ):
-    """Gets the source using sauceNAO
+    """Gets the source using sauceNAO.
 
     Args:
         url: URL link to an image.
@@ -240,7 +241,7 @@ async def saucenao_menu(
     context: tanjun.context.SlashContext,
     message: hikari.Message,
     *,
-    saucenao: pysaucenao.SauceNao = tanjun.inject(type=pysaucenao.SauceNao),
+    saucenao: pysaucenao.saucenao.SauceNao = tanjun.inject(type=pysaucenao.saucenao.SauceNao),
 ):
     attachment = find_message_attachment(message)
 

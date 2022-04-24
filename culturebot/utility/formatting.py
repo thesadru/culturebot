@@ -26,7 +26,7 @@ def multiline_join(strings: list[str], sep: str = "", prefix: str = "", suffix: 
 
 
 def grouper(iterable: typing.Iterable[T], chunk_size: int) -> typing.Iterator[list[T]]:
-    """Like chunkify but for any iterable"""
+    """Like chunkify but for any iterable."""
     it = iter(iterable)
     while chunk := list(itertools.islice(it, chunk_size)):
         yield chunk

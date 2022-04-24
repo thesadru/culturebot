@@ -65,12 +65,12 @@ def convert_value(tp: typing.Any, raw: typing.Any) -> typing.Any:
     if isinstance(tp, type) and issubclass(tp, (int, str, float, bool)):
         return tp(raw)
 
-    if issubclass_(typing.get_origin(tp), typing.Sequence):
+    if issubclass_(origin := typing.get_origin(tp), typing.Sequence):
         underlying = typing.Any
         if args := typing.get_args(tp):
             underlying = args[0]
 
-        return [convert_value(underlying, i) for i in raw]
+        return origin([convert_value(underlying, i) for i in raw])  # type: ignore  # Sequence ABC does not have __init__
 
     raise TypeError(f"Could not parse {tp}")
 
@@ -93,7 +93,7 @@ def guess_default(tp: typing.Any) -> typing.Any:
 
 
 class Field(abc.ABC):
-    """A field that can get a value by itself"""
+    """A field that can get a value by itself."""
 
     name: str = typing.cast(str, MISSING)
     type: typing.Any = MISSING
@@ -120,22 +120,22 @@ class Field(abc.ABC):
 
     @property
     def default(self) -> typing.Any:
+        if self._default is MISSING and not self._guessed_default:
+            self._guessed_default = True
+            self.default = guess_default(self.type)
+
         if self._default is not MISSING:
             if callable(self._default):
                 return self._default()
 
             return self._default
 
-        if not self._guessed_default:
-            self._guessed_default = True
-            self.default = guess_default(self.type)
-            return self.default
-
         raise TypeError(f"No default value for {repr(self)}")
 
     @default.setter
     def default(self, default: typing.Any) -> None:
         if isinstance(default, (list, dict, set)):
+            default = typing.cast("typing.Collection[typing.Any]", default)
             if len(default) > 0:
                 default = functools.partial(copy.copy, default)
             else:
