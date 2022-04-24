@@ -20,3 +20,5 @@ class SwearUser:
 
     user_id: int
     guild_id: int
+
+    optout: bool

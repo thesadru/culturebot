@@ -14,27 +14,6 @@ from culturebot import config
 component = tanjun.Component(name="source")
 
 
-def check_url_or_attachment(
-    interaction: typing.Union[tanjun.abc.SlashContext, hikari.CommandInteraction],
-    url: typing.Optional[str] = None,
-    attachment: typing.Optional[typing.Union[hikari.Attachment, str]] = None,
-) -> str:
-    if isinstance(interaction, tanjun.abc.SlashContext):
-        interaction = interaction.interaction
-
-    if attachment is not None:
-        if isinstance(attachment, str):
-            assert interaction.resolved
-            attachment = interaction.resolved.attachments[hikari.Snowflake(attachment)]
-
-        url = attachment.url
-
-    if url is None:
-        raise tanjun.CommandError("Either a url or an attachment must be provided")
-
-    return url
-
-
 @tanchi.as_slash_command()
 async def tracemoe(
     context: tanjun.context.SlashContext,
@@ -56,7 +35,9 @@ async def tracemoe(
         anilist_id: search for a matching scene only in a particular anime by Anilist ID
         result_size: the size of the resulting image, defaults to Large
     """
-    url = check_url_or_attachment(context, url, attachment)
+    url = url or attachment and attachment.url
+    if url is None:
+        raise tanjun.CommandError("Either a url or an attachment must be provided")
 
     query: dict[str, typing.Any] = dict(url=url, anilistInfo=1)
     if cut_borders:
@@ -189,6 +170,40 @@ def parse_saucenao_source(source: pysaucenao.containers.GenericSource) -> hikari
     return embed
 
 
+async def common_saucenao(
+    context: tanjun.context.slash.AppCommandContext,
+    saucenao: pysaucenao.saucenao.SauceNao,
+    url: typing.Optional[str],
+) -> None:
+    if url is None:
+        context.set_ephemeral_default(True)
+
+        raise tanjun.CommandError("Either a url or an attachment must be provided")
+
+    try:
+        result = await saucenao.from_url(url)
+    except pysaucenao.SauceNaoException as e:
+        context.set_ephemeral_default(True)
+
+        error = str(e).replace("<br />", "\n")
+        if "<a" in error:
+            error, details = error.split("<a")[0].strip(), error.split("</a>")[-1].strip()
+        else:
+            details = ""
+        raise tanjun.CommandError(error + "\n\n" + details)
+
+    if not result.results:
+        context.set_ephemeral_default(True)
+
+        await context.respond("No similar results found")
+        return
+
+    # TODO: Scroll through results
+    embeds = [parse_saucenao_source(source) for source in result.results]
+
+    await context.respond(embeds=embeds)
+
+
 @tanchi.as_slash_command()
 async def saucenao(
     context: tanjun.context.SlashContext,
@@ -196,30 +211,14 @@ async def saucenao(
     attachment: typing.Optional[hikari.Attachment] = None,
     *,
     saucenao: pysaucenao.saucenao.SauceNao = tanjun.inject(type=pysaucenao.saucenao.SauceNao),
-):
+) -> None:
     """Gets the source using sauceNAO.
 
     Args:
         url: URL link to an image.
         attachment: An image attachment.
     """
-    url = check_url_or_attachment(context, url, attachment)
-
-    try:
-        result = await saucenao.from_url(url)
-    except pysaucenao.SauceNaoException as e:
-        raise tanjun.CommandError(e.args[0])
-
-    if not result.results:
-        context.set_ephemeral_default(True)
-
-        await context.create_initial_response("No similar results found", ephemeral=True)
-        return
-
-    # TODO: Scroll through results
-    embeds = [parse_saucenao_source(source) for source in result.results]
-
-    await context.respond(embeds=embeds)
+    await common_saucenao(context, saucenao, url or attachment and attachment.url)
 
 
 def find_message_attachment(message: hikari.Message) -> typing.Optional[hikari.files.Resource[typing.Any]]:
@@ -238,29 +237,13 @@ def find_message_attachment(message: hikari.Message) -> typing.Optional[hikari.f
 
 @tanjun.as_message_menu("SauceNAO")
 async def saucenao_menu(
-    context: tanjun.context.SlashContext,
+    context: tanjun.context.MenuContext,
     message: hikari.Message,
     *,
     saucenao: pysaucenao.saucenao.SauceNao = tanjun.inject(type=pysaucenao.saucenao.SauceNao),
-):
+) -> None:
     attachment = find_message_attachment(message)
-
-    if attachment is None:
-        raise tanjun.CommandError("No image found")
-
-    try:
-        result = await saucenao.from_url(attachment.url)
-    except pysaucenao.SauceNaoException as e:
-        raise tanjun.CommandError(e.args[0])
-
-    if not result.results:
-        await context.respond("No similar results found")
-        return
-
-    # TODO: Scroll through results
-    embeds = [parse_saucenao_source(source) for source in result.results]
-
-    await context.respond(embeds=embeds)
+    await common_saucenao(context, saucenao, attachment and attachment.url)
 
 
 component.load_from_scope()

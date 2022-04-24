@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS swears.user
     user_id         BIGINT NOT NULL,
     guild_id        BIGINT NOT NULL,
     
+    optout          BOOLEAN NOT NULL DEFAULT FALSE,
+    
     PRIMARY KEY (user_id, guild_id)
 );
 
@@ -49,8 +51,10 @@ CREATE TABLE IF NOT EXISTS swears.swear
     guild_id        BIGINT NOT NULL,
 
     swear           CHARACTER VARYING NOT NULL,
-    amount          INT NOT NULL,
+    amount          INT NOT NULL DEFAULT 0,
     
     FOREIGN KEY (user_id, guild_id)
-        REFERENCES swears.user(user_id, guild_id)
+        REFERENCES swears.user(user_id, guild_id),
+
+    UNIQUE (user_id, guild_id, swear)
 );

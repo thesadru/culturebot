@@ -56,5 +56,5 @@ async def autocomplete_target_lang(
     await context.set_choices(resolved)
 
 
-component.load_from_scope()
+# component.load_from_scope()
 loader = component.make_loader()

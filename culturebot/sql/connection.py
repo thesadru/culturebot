@@ -30,8 +30,13 @@ def make_eq(start: int = 1, **kwargs: typing.Any):
     return [f"{k} = ${n}" for n, k in enumerate(kwargs.keys(), start)]
 
 
-def make_s(start: int = 1, **kwargs: typing.Any):
-    return [f"${n}" for n in range(start, len(kwargs) + start)]
+def make_s(amount: typing.Optional[int] = None, /, start: int = 1, **kwargs: typing.Any):
+    if amount is None and kwargs:
+        amount = len(kwargs)
+
+    assert amount
+
+    return [f"${n}" for n in range(start, amount + start)]
 
 
 def only_truthy(
@@ -103,6 +108,13 @@ class Connection:
         async with self.pool.acquire() as con:
             return await con.fetchrow(query, *args, record_class=cls)
 
+    async def fetch(self, query: str, *args: typing.Any, cls: typing.Type[T] = asyncpg.Record) -> typing.Sequence[T]:
+        if not issubclass(cls, asyncpg.Record):
+            cls = make_record(cls)
+
+        async with self.pool.acquire() as con:
+            return await con.fetch(query, *args, record_class=cls)
+
     async def select(
         self,
         cls: typing.Type[T] = asyncpg.Record,
@@ -115,10 +127,24 @@ class Connection:
         query = f"SELECT * FROM {table} WHERE {where}"
         return await self.fetchrow(query, *kwargs.values(), cls=cls)
 
+    async def select_row(
+        self,
+        cls: typing.Type[T] = asyncpg.Record,
+        table: typing.Optional[str] = None,
+        **kwargs: typing.Any,
+    ) -> typing.Sequence[T]:
+        table = table or getattr(cls, "__tablename__")
+
+        where = " AND ".join(make_eq(**kwargs))
+        query = f"SELECT * FROM {table} WHERE {where}"
+        return await self.fetch(query, *kwargs.values(), cls=cls)
+
     async def execute(self, query: str, *args: typing.Any) -> str:
         return await self.pool.execute(query, *args)
 
-    async def insert(self, table: str, **kwargs: typing.Any) -> str:
+    async def insert(self, table: typing.Union[str, type], **kwargs: typing.Any) -> str:
+        table = table if isinstance(table, str) else getattr(table, "__tablename__")
+
         columns = ", ".join(kwargs.keys())
         values = ", ".join(make_s(**kwargs))
         query = f"INSERT INTO {table} ({columns}) VALUES ({values})"
@@ -147,7 +173,6 @@ class Connection:
         self,
         table: typing.Union[str, type],
         keys: typing.Optional[typing.Sequence[str]] = None,
-        update: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         **kwargs: typing.Any,
     ) -> str:
         table = table if isinstance(table, str) else getattr(table, "__tablename__")
@@ -156,7 +181,7 @@ class Connection:
         columns = ", ".join(kwargs.keys())
         values = ", ".join(make_s(**kwargs))
         conflict_keys = ", ".join(keys)
-        conflict_values = ", ".join(make_eq(**(update or kwargs)))
+        conflict_values = ", ".join(make_eq(**kwargs))
         query = (
             f"INSERT INTO {table} ({columns}) VALUES ({values}) "
             f"ON CONFLICT ({conflict_keys}) DO UPDATE SET {conflict_values}"

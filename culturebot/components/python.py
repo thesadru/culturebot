@@ -16,6 +16,8 @@ blib_logger.setLevel(logging.CRITICAL)
 
 BLOCK_RE = re.compile(r"```py\s((?:.|\n)+?)```")
 
+python_group = tanjun.slash_command_group("python", "Python commands.")
+
 
 def format_code(string: str, line_length: int = 88, sort_imports: bool = False) -> str:
     try:
@@ -41,16 +43,7 @@ def mypy_type_check(content: str, args: typing.Sequence[str]) -> str:
     return stdout
 
 
-def mypy_type_check_code_blocks(content: str, args: typing.Optional[typing.Sequence[str]] = None) -> str:
-    args = args or []
-
-    result: typing.List[str] = []
-    for codeblock in BLOCK_RE.findall(content):
-        result.append("```\n" + mypy_type_check(codeblock, args) + "\n```")
-
-    return "\n\n".join(result)
-
-
+@python_group.with_command
 @tanchi.as_slash_command()
 async def format(
     context: tanjun.abc.SlashContext,
@@ -81,6 +74,7 @@ async def format_ctx(context: tanjun.abc.SlashContext, message: hikari.Message):
     await context.create_initial_response(content, ephemeral=True)
 
 
+@python_group.with_command
 @tanchi.as_slash_command()
 async def type_check(
     context: tanjun.abc.SlashContext,
@@ -103,17 +97,12 @@ async def type_check(
     if strict:
         args += ["--strict"]
 
-    content = mypy_type_check_code_blocks(message.content, args)
+    result: typing.List[str] = []
+    for codeblock in BLOCK_RE.findall(message.content):
+        stdout, stderr, code = mypy.api.run([*args, "-c", codeblock])
+        result.append(f"```\n{stdout}\n```")
 
-    await context.create_initial_response(content, ephemeral=ephemeral)
-
-
-@tanjun.as_message_menu("Type-Check Python Code Block")
-async def type_check_ctx(context: tanjun.abc.SlashContext, message: hikari.Message):
-    assert message.content
-
-    content = mypy_type_check_code_blocks(message.content)
-    await context.respond(content)
+    await context.create_initial_response("\n\n".join(result), ephemeral=ephemeral)
 
 
 component = tanjun.Component(name="python").load_from_scope()
